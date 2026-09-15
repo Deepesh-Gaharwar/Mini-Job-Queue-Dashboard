@@ -4,7 +4,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
-import { CreateJobDto } from "../dto/create_job.dto.js";
+import { CreateJobDto } from '../dto/create_job.dto.js';
+import { GetJobsDto } from '../dto/get_jobs.dto.js';
 import { UpdateJobStatusDto } from '../dto/update_job_status.dto.js';
 import { JobStatus } from '../enums/job_status.enum.js';
 import { JobsRepository } from '../repositories/jobs.repository.js';
@@ -18,14 +19,21 @@ export class JobsService {
   async createJob(createJobDto: CreateJobDto) {
     const { title, type } = createJobDto;
 
-    return this.jobsRepository.create(title, type);
+    const job = await this.jobsRepository.create(title, type);
+
+    return {
+      message: 'Job created successfully',
+      data: job,
+    };
   }
 
-  async getJobs(
-    page = 1,
-    limit = 10,
-    status?: JobStatus,
-  ) {
+  async getJobs(getJobsDto: GetJobsDto) {
+    const {
+      page = 1,
+      limit = 10,
+      status,
+    } = getJobsDto;
+
     const skip = (page - 1) * limit;
 
     const [jobs, total] = await this.jobsRepository.findAll(
@@ -75,7 +83,12 @@ export class JobsService {
       );
     }
 
-    return this.jobsRepository.findById(id);
+    const updatedJob = await this.jobsRepository.findById(id);
+
+    return {
+      message: 'Job status updated successfully',
+      data: updatedJob,
+    };
   }
 
   async deleteJob(id: string) {

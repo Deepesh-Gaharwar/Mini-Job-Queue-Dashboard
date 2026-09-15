@@ -10,6 +10,7 @@ import {
   Query,
 } from '@nestjs/common';
 
+import { GetJobsDto } from '../dto/get_jobs.dto.js';
 import { CreateJobDto } from '../dto/create_job.dto.js';
 import { UpdateJobStatusDto } from '../dto/update_job_status.dto.js';
 import { JobStatus } from '../enums/job_status.enum.js';
@@ -27,18 +28,11 @@ export class JobsController {
   }
 
   @Get()
-  async getJobs(
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
-    @Query('status') status?: JobStatus,
-  ) {
-    const parsedPage = page ? Number(page) : 1;
-    const parsedLimit = limit ? Number(limit) : 10;
-
+  async getJobs(@Query() query: GetJobsDto) {
     return this.jobsService.getJobs(
-      parsedPage,
-      parsedLimit,
-      status,
+      query.page,
+      query.limit,
+      query.status,
     );
   }
 

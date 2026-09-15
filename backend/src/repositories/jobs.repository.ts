@@ -69,4 +69,26 @@ export class JobsRepository {
 
     return result.affected === 1;
   }
+
+  async getStatusCounts(): Promise<Record<JobStatus, number>> {
+    const results = await this.jobRepository
+        .createQueryBuilder('job')
+        .select('job.status', 'status')
+        .addSelect('COUNT(job.id)', 'count')
+        .groupBy('job.status')
+        .getRawMany();
+
+    const counts: Record<JobStatus, number> = {
+        [JobStatus.PENDING]: 0,
+        [JobStatus.RUNNING]: 0,
+        [JobStatus.COMPLETED]: 0,
+        [JobStatus.FAILED]: 0,
+    };
+
+    for (const result of results) {
+        counts[result.status as JobStatus] = Number(result.count);
+    }
+
+   return counts;
+ }
 }

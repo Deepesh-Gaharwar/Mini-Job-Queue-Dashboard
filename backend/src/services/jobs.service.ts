@@ -125,4 +125,8 @@ export class JobsService {
 
     return allowedTransitions[currentStatus].includes(newStatus);
   }
+
+  async getJobStatusCounts() {
+   return this.jobsRepository.getStatusCounts();
+  }
 }

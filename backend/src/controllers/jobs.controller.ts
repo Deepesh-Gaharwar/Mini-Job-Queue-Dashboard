@@ -31,6 +31,11 @@ export class JobsController {
     return this.jobsService.getJobs(query);
   }
 
+  @Get('counts')
+   async getJobStatusCounts() {
+   return this.jobsService.getJobStatusCounts();
+  }
+
   @Patch(':id/status')
   async updateJobStatus(
     @Param('id', new ParseUUIDPipe()) id: string,

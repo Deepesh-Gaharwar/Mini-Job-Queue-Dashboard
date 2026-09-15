@@ -1,8 +1,32 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { JobsModule } from "./jobs.module.js";
+import { Job } from './entities/job.entity.js';
+import { JobsModule } from './jobs.module.js';
 
 @Module({
-  imports: [JobsModule],
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+
+      inject: [ConfigService],
+
+      useFactory: (configService: ConfigService) => ({
+        type: 'postgres',
+        url: configService.getOrThrow<string>('DATABASE_URL'),
+
+        entities: [Job],
+
+        synchronize: true,
+      }),
+    }),
+
+    JobsModule,
+  ],
 })
 export class AppModule {}

@@ -3,9 +3,12 @@ import { toast } from 'react-toastify';
 
 import Button from '../components/Button';
 import CreateJobModal from '../components/jobs/CreateJobModal';
+import ErrorMessage from '../components/ErrorMessage';
 import JobFilters from '../components/JobFilters';
-import StatusCards from '../components/StatusCards';
 import JobTable from '../components/jobs/JobTable';
+import Pagination from '../components/Pagination';
+import Spinner from '../components/Spinner';
+import StatusCards from '../components/StatusCards';
 
 import { useAppDispatch, useAppSelector } from '../redux/hooks';
 
@@ -37,6 +40,7 @@ function Dashboard() {
     currentPage,
     limit,
     total,
+    totalPages,
     selectedStatus,
     loading,
     error,
@@ -124,6 +128,10 @@ function Dashboard() {
     status: JobStatus | 'all',
   ) => {
     dispatch(setSelectedStatus(status));
+  };
+
+  const handlePageChange = (page: number) => {
+    dispatch(setCurrentPage(page));
   };
 
   const handleCreateJob = async (
@@ -266,18 +274,20 @@ function Dashboard() {
             />
 
             {loading && (
-              <div className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-6 text-center">
-                <p className="text-sm text-gray-600">
+              <div className="mt-6 flex min-h-40 items-center justify-center rounded-lg border border-gray-200 bg-gray-50">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <Spinner />
                   Loading jobs...
-                </p>
+                </div>
               </div>
             )}
 
             {!loading && error && (
-              <div className="mt-6 rounded-lg border border-red-200 bg-red-50 p-6">
-                <p className="text-sm text-red-700">
-                  {error}
-                </p>
+              <div className="mt-6">
+                <ErrorMessage
+                  message={error}
+                  onRetry={fetchDashboardData}
+                />
               </div>
             )}
 
@@ -296,6 +306,12 @@ function Dashboard() {
                     handleJobStatusChange
                   }
                   onDelete={handleDeleteJob}
+                />
+
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
                 />
               </div>
             )}

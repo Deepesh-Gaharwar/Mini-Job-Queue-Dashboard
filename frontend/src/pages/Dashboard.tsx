@@ -1,11 +1,14 @@
 import { useEffect } from 'react';
 
-import { useAppDispatch, useAppSelector } from '../redux/hooks';
+import JobFilters from '../components/JobFilters';
+import StatusCards from '../components/StatusCards';
 
+import { useAppDispatch, useAppSelector } from '../redux/hooks';
 import {
   setError,
   setJobs,
   setLoading,
+  setSelectedStatus,
   setStatusCounts,
 } from '../redux/jobsSlice';
 
@@ -13,6 +16,8 @@ import {
   getJobStatusCounts,
   getJobs,
 } from '../services/jobsService';
+
+import type { JobStatus } from '../types/job';
 
 function Dashboard() {
   const dispatch = useAppDispatch();
@@ -22,6 +27,7 @@ function Dashboard() {
     statusCounts,
     currentPage,
     limit,
+    total,
     selectedStatus,
     loading,
     error,
@@ -38,10 +44,11 @@ function Dashboard() {
             ? undefined
             : selectedStatus;
 
-        const [jobsResponse, countsResponse] = await Promise.all([
-          getJobs(currentPage, limit, status),
-          getJobStatusCounts(),
-        ]);
+        const [jobsResponse, countsResponse] =
+          await Promise.all([
+            getJobs(currentPage, limit, status),
+            getJobStatusCounts(),
+          ]);
 
         dispatch(
           setJobs({
@@ -55,7 +62,10 @@ function Dashboard() {
 
         dispatch(setStatusCounts(countsResponse));
       } catch (err) {
-        console.error('Failed to fetch dashboard data:', err);
+        console.error(
+          'Failed to fetch dashboard data:',
+          err,
+        );
 
         dispatch(
           setError(
@@ -68,12 +78,23 @@ function Dashboard() {
     };
 
     fetchDashboardData();
-  }, [dispatch, currentPage, limit, selectedStatus]);
+  }, [
+    dispatch,
+    currentPage,
+    limit,
+    selectedStatus,
+  ]);
+
+  const handleStatusChange = (
+    status: JobStatus | 'all',
+  ) => {
+    dispatch(setSelectedStatus(status));
+  };
 
   return (
     <main className="min-h-screen bg-gray-100 px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
-        <div className="mb-8">
+        <header className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">
             Job Queue Dashboard
           </h1>
@@ -81,81 +102,58 @@ function Dashboard() {
           <p className="mt-2 text-sm text-gray-600">
             Monitor and manage your background jobs.
           </p>
-        </div>
+        </header>
 
-        {loading && (
-          <div className="rounded-lg border border-gray-200 bg-white p-6 text-center">
-            <p className="text-sm text-gray-600">
-              Loading jobs...
-            </p>
-          </div>
-        )}
+        <div className="space-y-6">
+          <StatusCards
+            onStatusSelect={handleStatusChange}
+          />
 
-        {!loading && error && (
-          <div className="rounded-lg border border-red-200 bg-red-50 p-6">
-            <p className="text-sm text-red-700">
-              {error}
-            </p>
-          </div>
-        )}
+          <section className="rounded-lg border border-gray-200 bg-white p-6">
+            <JobFilters
+              onStatusChange={handleStatusChange}
+            />
 
-        {!loading && !error && (
-          <div className="space-y-6">
-            <div className="rounded-lg border border-gray-200 bg-white p-6">
-              <h2 className="text-lg font-semibold text-gray-900">
-                Status Overview
-              </h2>
-
-              <div className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
-                <div className="rounded-lg bg-gray-50 p-4">
-                  <p className="text-sm text-gray-500">
-                    Pending
-                  </p>
-                  <p className="mt-1 text-2xl font-bold text-gray-900">
-                    {statusCounts.pending}
-                  </p>
-                </div>
-
-                <div className="rounded-lg bg-gray-50 p-4">
-                  <p className="text-sm text-gray-500">
-                    Running
-                  </p>
-                  <p className="mt-1 text-2xl font-bold text-gray-900">
-                    {statusCounts.running}
-                  </p>
-                </div>
-
-                <div className="rounded-lg bg-gray-50 p-4">
-                  <p className="text-sm text-gray-500">
-                    Completed
-                  </p>
-                  <p className="mt-1 text-2xl font-bold text-gray-900">
-                    {statusCounts.completed}
-                  </p>
-                </div>
-
-                <div className="rounded-lg bg-gray-50 p-4">
-                  <p className="text-sm text-gray-500">
-                    Failed
-                  </p>
-                  <p className="mt-1 text-2xl font-bold text-gray-900">
-                    {statusCounts.failed}
-                  </p>
-                </div>
+            {loading && (
+              <div className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-6 text-center">
+                <p className="text-sm text-gray-600">
+                  Loading jobs...
+                </p>
               </div>
-            </div>
+            )}
 
-            <div className="rounded-lg border border-gray-200 bg-white p-6">
-              <h2 className="text-lg font-semibold text-gray-900">
-                Jobs
-              </h2>
+            {!loading && error && (
+              <div className="mt-6 rounded-lg border border-red-200 bg-red-50 p-6">
+                <p className="text-sm text-red-700">
+                  {error}
+                </p>
+              </div>
+            )}
 
-              <p className="mt-2 text-sm text-gray-600">
-                Total jobs: {jobs.length}
-              </p>
-            </div>
-          </div>
-        )}
+            {!loading && !error && (
+              <div className="mt-6">
+                {jobs.length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-8 text-center">
+                    <p className="text-sm font-medium text-gray-700">
+                      No jobs found
+                    </p>
+
+                    <p className="mt-1 text-sm text-gray-500">
+                      There are no jobs matching the selected
+                      status.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                    <p className="text-sm text-gray-600">
+                      Showing {jobs.length} of {total} jobs
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </section>
+        </div>
       </div>
     </main>
   );

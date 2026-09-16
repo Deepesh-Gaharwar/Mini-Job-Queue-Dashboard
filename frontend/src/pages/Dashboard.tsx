@@ -237,8 +237,8 @@ function Dashboard() {
       <div className="mx-auto max-w-7xl">
         <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              Job Queue Dashboard
+            <h1 className="text-3xl font-bold text-gray-900 items-center">
+              Mini Job Queue Dashboard
             </h1>
 
             <p className="mt-2 text-sm text-gray-600">

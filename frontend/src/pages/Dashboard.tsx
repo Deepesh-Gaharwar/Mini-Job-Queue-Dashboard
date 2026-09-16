@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 
+import Button from '../components/Button';
+import CreateJobModal from '../components/jobs/CreateJobModal';
 import JobFilters from '../components/JobFilters';
 import StatusCards from '../components/StatusCards';
 import JobTable from '../components/jobs/JobTable';
@@ -17,6 +19,7 @@ import {
 } from '../redux/jobsSlice';
 
 import {
+  createJob,
   deleteJob,
   getJobStatusCounts,
   getJobs,
@@ -42,6 +45,9 @@ function Dashboard() {
   const [actionLoadingId, setActionLoadingId] =
     useState<string | null>(null);
 
+  const [isCreateModalOpen, setIsCreateModalOpen] =
+    useState(false);
+
   const fetchDashboardData = useCallback(async () => {
     try {
       dispatch(setLoading(true));
@@ -60,11 +66,8 @@ function Dashboard() {
 
       const { pagination } = jobsResponse;
 
-      // Always update the global status counts.
       dispatch(setStatusCounts(countsResponse));
 
-      // If the current page no longer exists,
-      // move to the last valid page.
       if (
         pagination.totalPages > 0 &&
         currentPage > pagination.totalPages
@@ -75,7 +78,6 @@ function Dashboard() {
         return;
       }
 
-      // If there are no jobs, keep the page at 1.
       if (
         pagination.totalPages === 0 &&
         currentPage !== 1
@@ -124,6 +126,39 @@ function Dashboard() {
     dispatch(setSelectedStatus(status));
   };
 
+  const handleCreateJob = async (
+    title: string,
+    type: string,
+  ) => {
+    try {
+      const response = await createJob({
+        title,
+        type,
+      });
+
+      toast.success(response.message);
+
+      await fetchDashboardData();
+    } catch (err: any) {
+      console.error(
+        'Failed to create job:',
+        err,
+      );
+
+      const message =
+        err?.response?.data?.message ||
+        'Failed to create job. Please try again.';
+
+      const errorMessage = Array.isArray(message)
+        ? message.join(', ')
+        : message;
+
+      toast.error(errorMessage);
+
+      throw err;
+    }
+  };
+
   const handleJobStatusChange = async (
     id: string,
     status: JobStatus,
@@ -131,7 +166,10 @@ function Dashboard() {
     try {
       setActionLoadingId(id);
 
-      const response = await updateJobStatus(id, status);
+      const response = await updateJobStatus(
+        id,
+        status,
+      );
 
       toast.success(response.message);
 
@@ -196,14 +234,25 @@ function Dashboard() {
   return (
     <main className="min-h-screen bg-gray-100 px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
-        <header className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            Job Queue Dashboard
-          </h1>
+        <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Job Queue Dashboard
+            </h1>
 
-          <p className="mt-2 text-sm text-gray-600">
-            Monitor and manage your background jobs.
-          </p>
+            <p className="mt-2 text-sm text-gray-600">
+              Monitor and manage your background jobs.
+            </p>
+          </div>
+
+          <Button
+            type="button"
+            onClick={() =>
+              setIsCreateModalOpen(true)
+            }
+          >
+            Create Job
+          </Button>
         </header>
 
         <div className="space-y-6">
@@ -253,6 +302,14 @@ function Dashboard() {
           </section>
         </div>
       </div>
+
+      <CreateJobModal
+        isOpen={isCreateModalOpen}
+        onClose={() =>
+          setIsCreateModalOpen(false)
+        }
+        onCreate={handleCreateJob}
+      />
     </main>
   );
 }

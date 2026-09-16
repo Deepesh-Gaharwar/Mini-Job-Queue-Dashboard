@@ -13,16 +13,20 @@ import { JobsModule } from './jobs.module.js';
 
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-
       inject: [ConfigService],
 
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
-        url: configService.getOrThrow<string>('DATABASE_URL'),
+
+        url: configService.getOrThrow<string>(
+          'DATABASE_URL',
+        ),
 
         entities: [Job],
 
-        synchronize: true,
+        synchronize:
+          configService.get<string>('NODE_ENV') !==
+          'production',
       }),
     }),
 

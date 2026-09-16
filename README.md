@@ -433,8 +433,16 @@ The frontend controls the user experience.
 The backend remains authoritative for the actual business rules.
 
 ---
+# Assumptions
 
-## Design Decisions and Trade-offs
+- I assume jobs are manually managed through the dashboard and no actual background worker is required for this assignment.
+- I assume authentication is not required because the assignment does not specify users or access control.
+- I allow a running job to transition to failed because a running job can encounter an execution failure.
+- I treat the backend as the source of truth for job status and transition rules.
+
+---
+
+# Design Decisions and Trade-offs
 
 ### PostgreSQL instead of SQLite
 
@@ -557,7 +565,7 @@ This keeps API responses bounded and makes the dashboard more suitable for a gro
 
 ---
 
-## Environment Variables
+# Environment Variables
 
 ### Backend
 
@@ -773,7 +781,7 @@ I also verified the frontend production build and tested the deployed frontend a
 
 ---
 
-## Future Improvements
+# Future Improvements
 
 If I had more time, I would consider:
 

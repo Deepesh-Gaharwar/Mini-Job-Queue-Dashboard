@@ -17,10 +17,6 @@ export interface CreateJobPayload {
   type: string;
 }
 
-export interface UpdateJobStatusPayload {
-  status: JobStatus;
-}
-
 export interface Pagination {
   page: number;
   limit: number;

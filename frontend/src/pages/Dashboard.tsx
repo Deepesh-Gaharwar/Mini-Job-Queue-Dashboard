@@ -29,6 +29,8 @@ import {
   updateJobStatus,
 } from '../services/jobsService';
 
+import { getApiErrorMessage } from '../services/apiError';
+
 import type { JobStatus } from '../types/job';
 
 function Dashboard() {
@@ -99,17 +101,18 @@ function Dashboard() {
           totalPages: pagination.totalPages,
         }),
       );
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(
         'Failed to fetch dashboard data:',
         err,
       );
 
-      dispatch(
-        setError(
-          'Unable to load jobs. Please try again.',
-        ),
+      const message = getApiErrorMessage(
+        err,
+        'Unable to load jobs. Please try again.',
       );
+
+      dispatch(setError(message));
     } finally {
       dispatch(setLoading(false));
     }
@@ -147,21 +150,18 @@ function Dashboard() {
       toast.success(response.message);
 
       await fetchDashboardData();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(
         'Failed to create job:',
         err,
       );
 
-      const message =
-        err?.response?.data?.message ||
-        'Failed to create job. Please try again.';
+      const message = getApiErrorMessage(
+        err,
+        'Failed to create job. Please try again.',
+      );
 
-      const errorMessage = Array.isArray(message)
-        ? message.join(', ')
-        : message;
-
-      toast.error(errorMessage);
+      toast.error(message);
 
       throw err;
     }
@@ -182,21 +182,18 @@ function Dashboard() {
       toast.success(response.message);
 
       await fetchDashboardData();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(
         'Failed to update job status:',
         err,
       );
 
-      const message =
-        err?.response?.data?.message ||
-        'Failed to update job status. Please try again.';
+      const message = getApiErrorMessage(
+        err,
+        'Failed to update job status. Please try again.',
+      );
 
-      const errorMessage = Array.isArray(message)
-        ? message.join(', ')
-        : message;
-
-      toast.error(errorMessage);
+      toast.error(message);
     } finally {
       setActionLoadingId(null);
     }
@@ -219,21 +216,18 @@ function Dashboard() {
       toast.success(response.message);
 
       await fetchDashboardData();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(
         'Failed to delete job:',
         err,
       );
 
-      const message =
-        err?.response?.data?.message ||
-        'Failed to delete job. Please try again.';
+      const message = getApiErrorMessage(
+        err,
+        'Failed to delete job. Please try again.',
+      );
 
-      const errorMessage = Array.isArray(message)
-        ? message.join(', ')
-        : message;
-
-      toast.error(errorMessage);
+      toast.error(message);
     } finally {
       setActionLoadingId(null);
     }

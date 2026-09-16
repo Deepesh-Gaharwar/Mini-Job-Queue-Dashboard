@@ -1,10 +1,14 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { toast } from 'react-toastify';
 
 import JobFilters from '../components/JobFilters';
 import StatusCards from '../components/StatusCards';
+import JobTable from '../components/jobs/JobTable';
 
 import { useAppDispatch, useAppSelector } from '../redux/hooks';
+
 import {
+  setCurrentPage,
   setError,
   setJobs,
   setLoading,
@@ -13,8 +17,10 @@ import {
 } from '../redux/jobsSlice';
 
 import {
+  deleteJob,
   getJobStatusCounts,
   getJobs,
+  updateJobStatus,
 } from '../services/jobsService';
 
 import type { JobStatus } from '../types/job';
@@ -33,51 +39,74 @@ function Dashboard() {
     error,
   } = useAppSelector((state) => state.jobs);
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        dispatch(setLoading(true));
-        dispatch(setError(null));
+  const [actionLoadingId, setActionLoadingId] =
+    useState<string | null>(null);
 
-        const status =
-          selectedStatus === 'all'
-            ? undefined
-            : selectedStatus;
+  const fetchDashboardData = useCallback(async () => {
+    try {
+      dispatch(setLoading(true));
+      dispatch(setError(null));
 
-        const [jobsResponse, countsResponse] =
-          await Promise.all([
-            getJobs(currentPage, limit, status),
-            getJobStatusCounts(),
-          ]);
+      const status =
+        selectedStatus === 'all'
+          ? undefined
+          : selectedStatus;
 
+      const [jobsResponse, countsResponse] =
+        await Promise.all([
+          getJobs(currentPage, limit, status),
+          getJobStatusCounts(),
+        ]);
+
+      const { pagination } = jobsResponse;
+
+      // Always update the global status counts.
+      dispatch(setStatusCounts(countsResponse));
+
+      // If the current page no longer exists,
+      // move to the last valid page.
+      if (
+        pagination.totalPages > 0 &&
+        currentPage > pagination.totalPages
+      ) {
         dispatch(
-          setJobs({
-            jobs: jobsResponse.data,
-            page: jobsResponse.pagination.page,
-            limit: jobsResponse.pagination.limit,
-            total: jobsResponse.pagination.total,
-            totalPages: jobsResponse.pagination.totalPages,
-          }),
+          setCurrentPage(pagination.totalPages),
         );
-
-        dispatch(setStatusCounts(countsResponse));
-      } catch (err) {
-        console.error(
-          'Failed to fetch dashboard data:',
-          err,
-        );
-
-        dispatch(
-          setError(
-            'Unable to load jobs. Please try again.',
-          ),
-        );
-      } finally {
-        dispatch(setLoading(false));
+        return;
       }
-    };
 
-    fetchDashboardData();
+      // If there are no jobs, keep the page at 1.
+      if (
+        pagination.totalPages === 0 &&
+        currentPage !== 1
+      ) {
+        dispatch(setCurrentPage(1));
+        return;
+      }
+
+      dispatch(
+        setJobs({
+          jobs: jobsResponse.data,
+          page: pagination.page,
+          limit: pagination.limit,
+          total: pagination.total,
+          totalPages: pagination.totalPages,
+        }),
+      );
+    } catch (err) {
+      console.error(
+        'Failed to fetch dashboard data:',
+        err,
+      );
+
+      dispatch(
+        setError(
+          'Unable to load jobs. Please try again.',
+        ),
+      );
+    } finally {
+      dispatch(setLoading(false));
+    }
   }, [
     dispatch,
     currentPage,
@@ -85,10 +114,83 @@ function Dashboard() {
     selectedStatus,
   ]);
 
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
+
   const handleStatusChange = (
     status: JobStatus | 'all',
   ) => {
     dispatch(setSelectedStatus(status));
+  };
+
+  const handleJobStatusChange = async (
+    id: string,
+    status: JobStatus,
+  ) => {
+    try {
+      setActionLoadingId(id);
+
+      const response = await updateJobStatus(id, status);
+
+      toast.success(response.message);
+
+      await fetchDashboardData();
+    } catch (err: any) {
+      console.error(
+        'Failed to update job status:',
+        err,
+      );
+
+      const message =
+        err?.response?.data?.message ||
+        'Failed to update job status. Please try again.';
+
+      const errorMessage = Array.isArray(message)
+        ? message.join(', ')
+        : message;
+
+      toast.error(errorMessage);
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleDeleteJob = async (id: string) => {
+    const confirmed = window.confirm(
+      'Are you sure you want to delete this job?',
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setActionLoadingId(id);
+
+      const response = await deleteJob(id);
+
+      toast.success(response.message);
+
+      await fetchDashboardData();
+    } catch (err: any) {
+      console.error(
+        'Failed to delete job:',
+        err,
+      );
+
+      const message =
+        err?.response?.data?.message ||
+        'Failed to delete job. Please try again.';
+
+      const errorMessage = Array.isArray(message)
+        ? message.join(', ')
+        : message;
+
+      toast.error(errorMessage);
+    } finally {
+      setActionLoadingId(null);
+    }
   };
 
   return (
@@ -132,24 +234,20 @@ function Dashboard() {
 
             {!loading && !error && (
               <div className="mt-6">
-                {jobs.length === 0 ? (
-                  <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-8 text-center">
-                    <p className="text-sm font-medium text-gray-700">
-                      No jobs found
-                    </p>
+                <div className="mb-4 flex items-center justify-between">
+                  <p className="text-sm text-gray-600">
+                    Showing {jobs.length} of {total} jobs
+                  </p>
+                </div>
 
-                    <p className="mt-1 text-sm text-gray-500">
-                      There are no jobs matching the selected
-                      status.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                    <p className="text-sm text-gray-600">
-                      Showing {jobs.length} of {total} jobs
-                    </p>
-                  </div>
-                )}
+                <JobTable
+                  jobs={jobs}
+                  actionLoadingId={actionLoadingId}
+                  onStatusChange={
+                    handleJobStatusChange
+                  }
+                  onDelete={handleDeleteJob}
+                />
               </div>
             )}
           </section>

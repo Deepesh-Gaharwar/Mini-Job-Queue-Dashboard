@@ -38,7 +38,6 @@ function Dashboard() {
 
   const {
     jobs,
-    statusCounts,
     currentPage,
     limit,
     total,

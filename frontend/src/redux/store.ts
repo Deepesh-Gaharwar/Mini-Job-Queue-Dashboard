@@ -14,8 +14,6 @@ import {
   persistStore,
 } from 'redux-persist';
 
-import * as storageModule from 'redux-persist/lib/storage';
-
 import jobsReducer from './jobsSlice';
 
 const storage = {

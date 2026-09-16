@@ -2,6 +2,7 @@ import {
   combineReducers,
   configureStore,
 } from '@reduxjs/toolkit';
+
 import {
   FLUSH,
   PAUSE,
@@ -12,9 +13,24 @@ import {
   persistReducer,
   persistStore,
 } from 'redux-persist';
-import storage from 'redux-persist/lib/storage';
+
+import * as storageModule from 'redux-persist/lib/storage';
 
 import jobsReducer from './jobsSlice';
+
+const storage = {
+  getItem: async (key: string) => {
+    return localStorage.getItem(key);
+  },
+
+  setItem: async (key: string, value: string) => {
+    localStorage.setItem(key, value);
+  },
+
+  removeItem: async (key: string) => {
+    localStorage.removeItem(key);
+  },
+};
 
 const rootReducer = combineReducers({
   jobs: jobsReducer,
